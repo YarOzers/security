@@ -65,6 +65,7 @@ public class AuthenticationService {
         var user = repository.findByEmail(request.getEmail())
                 .orElseThrow();// исключение нужно обработать
         var jwtToken = jwtService.generateToken(user);
+        revokeAllUserTokens(user);
         saveUserToken(user,jwtToken);
         return AuthenticationResponse.builder()
                 .token(jwtToken)
