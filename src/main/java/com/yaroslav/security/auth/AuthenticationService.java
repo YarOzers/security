@@ -3,6 +3,7 @@ package com.yaroslav.security.auth;
 import com.yaroslav.security.config.JwtService;
 import com.yaroslav.security.token.Token;
 import com.yaroslav.security.token.TokenRepository;
+import com.yaroslav.security.token.TokenType;
 import com.yaroslav.security.user.Role;
 import com.yaroslav.security.user.User;
 import com.yaroslav.security.user.UserRepository;
@@ -41,15 +42,18 @@ public class AuthenticationService {
                 .build();
     }
 
-    private void saveUserToken(User user, String jwtToken) {
-        var token = Token.builder()
-                .user(user)
-                .token(jwtToken)
-                .revoked(false)
-                .expired(false)
-                .build();
-        tokenRepository.save(token);
+    private void revokeAllUserTokens(User user){
+        var validUserToken = tokenRepository.findAllValidTokensByUser(user.getId());
+        if(validUserToken.isEmpty())
+            return;
+        validUserToken.forEach(t ->{
+            t.setExpired(true);
+            t.setRevoked(true);
+        });
+        tokenRepository.saveAll(validUserToken);
     }
+
+
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
         authenticationManager.authenticate(
@@ -65,5 +69,15 @@ public class AuthenticationService {
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .build();
+    }
+    private void saveUserToken(User user, String jwtToken) {
+        var token = Token.builder()
+                .user(user)
+                .token(jwtToken)
+                .tokenType(TokenType.BEARER)
+                .revoked(false)
+                .expired(false)
+                .build();
+        tokenRepository.save(token);
     }
 }
