@@ -1,6 +1,8 @@
 package com.yaroslav.security.auth;
 
 import com.yaroslav.security.config.JwtService;
+import com.yaroslav.security.token.Token;
+import com.yaroslav.security.token.TokenRepository;
 import com.yaroslav.security.user.Role;
 import com.yaroslav.security.user.User;
 import com.yaroslav.security.user.UserRepository;
@@ -15,6 +17,9 @@ import org.springframework.stereotype.Service;
 public class AuthenticationService {
 
     private final UserRepository repository;
+
+    private final TokenRepository tokenRepository;
+
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
@@ -28,11 +33,22 @@ public class AuthenticationService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.USER)// указываем роль
                 .build();
-        repository.save(user);
+        var sevedUser = repository.save(user);
         var jwtToken = jwtService.generateToken(user);
+        saveUserToken(sevedUser, jwtToken);
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .build();
+    }
+
+    private void saveUserToken(User user, String jwtToken) {
+        var token = Token.builder()
+                .user(user)
+                .token(jwtToken)
+                .revoked(false)
+                .expired(false)
+                .build();
+        tokenRepository.save(token);
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
@@ -45,6 +61,7 @@ public class AuthenticationService {
         var user = repository.findByEmail(request.getEmail())
                 .orElseThrow();// исключение нужно обработать
         var jwtToken = jwtService.generateToken(user);
+        saveUserToken(user,jwtToken);
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .build();

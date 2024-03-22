@@ -1,5 +1,6 @@
 package com.yaroslav.security.user;
 
+import com.yaroslav.security.token.Token;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -36,6 +37,9 @@ public class User implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     Role role;
+
+    @OneToMany(mappedBy = "user")
+    List<Token> tokens;
 
 
     @Override
