@@ -1,5 +1,6 @@
 package com.yaroslav.security.config;
 
+import com.yaroslav.security.token.TokenRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,6 +25,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private  final JwtService jwtService;
     private final UserDetailsService userDetailsService;
 
+    private final TokenRepository tokenRepository;
+
     @Override
 
     protected void doFilterInternal(
@@ -44,7 +47,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if(userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null);
         UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
         // проверяем действителен ли пользователь и токен
-        if(jwtService.isTokenValid(jwt, userDetails)){
+        var isTokenValid = tokenRepository.findByToken(jwt)
+                .map(t->!t.isExpired() && !t.isRevoked())
+                .orElse(false);
+        if(jwtService.isTokenValid(jwt, userDetails) && isTokenValid){
             // создаем токен аутентификации
             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                     // передаем данные пользователя

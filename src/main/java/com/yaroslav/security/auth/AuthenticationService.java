@@ -25,6 +25,7 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
+
     // Сохраняет пользователя в БД, генерирует токен и возвращает его (токен)
     public AuthenticationResponse register(RegisterRequest request) {
         var user = User.builder()
